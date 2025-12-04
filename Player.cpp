@@ -2,18 +2,6 @@
 #include <string>
 using std::string;
 
-Player::Player() {
-    playerName = "";
-    characterName = "";
-    pathType = "";
-    advisorName = "";
-    experience = 0;
-    accuracy = 100;
-    efficiency = 100;
-    insight = 100;
-    discoveryPoints = 0;
-    position = 0;
-}
 Player::Player(string name, string character) {
     playerName = name;
     characterName = character;
@@ -26,6 +14,7 @@ Player::Player(string name, string character) {
     discoveryPoints = 0;
     position = 0;
 }
+
 //getters now
 string Player::getPlayerName() const { return playerName; }
 string Player::getCharacterName() const { return characterName; }
