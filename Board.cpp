@@ -162,3 +162,10 @@ int Board::getPlayerPosition(int player_index) const {
     }
     return -1;
 }
+
+char Board::getTileColor(int player_index, int pos) const {
+    if (player_index >= 0 && player_index < _player_count && pos >= 0 && pos < _BOARD_SIZE) {
+        return _tiles[player_index][pos].color;
+    }
+    return 'X';
+}
