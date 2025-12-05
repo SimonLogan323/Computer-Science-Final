@@ -9,6 +9,14 @@
 
 using namespace std;
 
+/* 
+Jack Rosenberg
+Simon Logan
+CSCI 1300 with Prof. Hoenigman
+*/
+
+
+
 struct Character {
     string name;
     int experience;
