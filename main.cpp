@@ -329,24 +329,6 @@ void identifyMutations(string input_strand, string target_strand) {
     }
 }
 
-// Transcribe DNA to RNA and return the RNA string (T -> U). Does not print.
-string transcribeDNAtoRNA(const string &strand) {
-    string rna;
-    rna.reserve(strand.length());
-    for (int i = 0; i < (int)strand.length(); i++) {
-        char c = strand[i];
-        if (c == 'T' || c == 't') rna.push_back('U');
-        else rna.push_back((char)toupper(c));
-    }
-    return rna;
-}
-
-// Helper to print transcription for UX when needed
-void printTranscription(const string &strand) {
-    cout << "\n========== DNA to RNA Transcription ==========\n";
-    cout << "DNA: " << strand << "\n";
-    cout << "RNA: " << transcribeDNAtoRNA(strand) << "\n";
-}
 
 void handleGreenTile(Player &player, Board &board, int playerIndex) {
     if (rand() % 100 < 50) {
@@ -463,13 +445,10 @@ void handleBrownTile(Player &player) {
     cout << "\n*** Brown Tile: DNA to RNA Transcription ***\n";
     string randomDNA = generateRandomDNAStrand(6);
     cout << "Random DNA strand: " << randomDNA << endl;
-
-    // Prompt the user to transcribe DNA -> RNA (T -> U)
-    cout << "Enter the RNA transcription (use U for thymine): ";
+    cout << "Enter the RNA transcription: ";
     string userRNA;
     cin >> userRNA;
 
-    // Normalize both strings to uppercase for comparison
     for (int i = 0; i < (int)userRNA.length(); ++i) userRNA[i] = (char)toupper(userRNA[i]);
     string correctRNA = randomDNA;
     for (int i = 0; i < (int)correctRNA.length(); ++i) {
