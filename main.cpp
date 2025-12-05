@@ -30,13 +30,7 @@ struct Riddle {
     string answer;
 };
 
-Character loadedCharacters[5];
-RandomEvent events[100];
-Riddle riddles[25];
-int eventCount = 0;
-int riddleCount = 0;
-
-void loadCharacters() {
+void loadCharacters(Character characters[5]) {
     ifstream file("characters.txt");
     if (!file.is_open()) {
         cout << "Error: Could not open characters.txt\n";
@@ -62,12 +56,12 @@ void loadCharacters() {
         }
         fields[fieldCount] = line.substr(pos);
         
-        loadedCharacters[index].name = fields[0];
-        loadedCharacters[index].experience = stoi(fields[1]);
-        loadedCharacters[index].accuracy = stoi(fields[2]);
-        loadedCharacters[index].efficiency = stoi(fields[3]);
-        loadedCharacters[index].insight = stoi(fields[4]);
-        loadedCharacters[index].discoveryPoints = stoi(fields[5]);
+        characters[index].name = fields[0];
+        characters[index].experience = stoi(fields[1]);
+        characters[index].accuracy = stoi(fields[2]);
+        characters[index].efficiency = stoi(fields[3]);
+        characters[index].insight = stoi(fields[4]);
+        characters[index].discoveryPoints = stoi(fields[5]);
         
         index++;
     }
@@ -75,18 +69,18 @@ void loadCharacters() {
     file.close();
 }
 
-void loadRandomEvents() {
+int loadRandomEvents(RandomEvent events[100]) {
     ifstream file("random_events.txt");
     if (!file.is_open()) {
         cout << "Error: Could not open random_events.txt\n";
-        return;
+        return 0;
     }
     
     string line;
     getline(file, line);
     getline(file, line);
     
-    eventCount = 0;
+    int eventCount = 0;
     while (getline(file, line) && eventCount < 100) {
         if (line.length() < 3 || line[0] == '/' || line[0] == '\n') {
             continue;
@@ -115,19 +109,20 @@ void loadRandomEvents() {
     }
     
     file.close();
+    return eventCount;
 }
 
-void loadRiddles() {
+int loadRiddles(Riddle riddles[25]) {
     ifstream file("riddles.txt");
     if (!file.is_open()) {
         cout << "Error: Could not open riddles.txt\n";
-        return;
+        return 0;
     }
     
     string line;
     getline(file, line);
     
-    riddleCount = 0;
+    int riddleCount = 0;
     while (getline(file, line) && riddleCount < 25) {
         int pipePos = -1;
         for (int i = 0; i < line.length(); i++) {
@@ -155,23 +150,24 @@ void loadRiddles() {
     }
     
     file.close();
+    return riddleCount;
 }
 
-void displayCharacters(bool available[5]) {
+void displayCharacters(Character characters[5], bool available[5]) {
     cout << "\n========== Available Characters ==========\n";
     for (int i = 0; i < 5; i++) {
         if (available[i]) {
-            cout << (i + 1) << ". " << loadedCharacters[i].name << "\n";
-            cout << "   Experience: " << loadedCharacters[i].experience << "\n";
-            cout << "   Accuracy: " << loadedCharacters[i].accuracy << "\n";
-            cout << "   Efficiency: " << loadedCharacters[i].efficiency << "\n";
-            cout << "   Insight: " << loadedCharacters[i].insight << "\n";
-            cout << "   Discovery Points: " << loadedCharacters[i].discoveryPoints << "\n\n";
+            cout << (i + 1) << ". " << characters[i].name << "\n";
+            cout << "   Experience: " << characters[i].experience << "\n";
+            cout << "   Accuracy: " << characters[i].accuracy << "\n";
+            cout << "   Efficiency: " << characters[i].efficiency << "\n";
+            cout << "   Insight: " << characters[i].insight << "\n";
+            cout << "   Discovery Points: " << characters[i].discoveryPoints << "\n\n";
         }
     }
 }
 
-Player setupPlayer(int playerNum, bool available[5]) {
+Player setupPlayer(int playerNum, Character characters[5], bool available[5]) {
     Player player;
     
     cout << "\n========== Player " << playerNum << " Setup ==========\n";
@@ -180,7 +176,7 @@ Player setupPlayer(int playerNum, bool available[5]) {
     cin >> playerName;
     player.setPlayerName(playerName);
     
-    displayCharacters(available);
+    displayCharacters(characters, available);
     
     int charChoice;
     bool validChoice = false;
@@ -197,7 +193,7 @@ Player setupPlayer(int playerNum, bool available[5]) {
         }
     }
     
-    Character chosen = loadedCharacters[charChoice];
+    Character chosen = characters[charChoice];
     player.setCharacterName(chosen.name);
     player.setExperience(chosen.experience);
     player.setAccuracy(chosen.accuracy);
@@ -249,6 +245,7 @@ Player setupPlayer(int playerNum, bool available[5]) {
     
     return player;
 }
+
 string generateRandomDNAStrand(int length) {
     string bases = "ATGC";
     string dnaStrand = "";
@@ -291,13 +288,11 @@ int bestStrandMatch(string input_strand, string target_strand) {
             }
         }
         
-    
         if (matches > maxMatches) {
             maxMatches = matches;
             bestIndex = i;
         }
     }
-    
     
     if (maxMatches == 0) {
         return -1;
@@ -329,8 +324,18 @@ void identifyMutations(string input_strand, string target_strand) {
     }
 }
 
+string transcribeDNAtoRNA(string strand) {
+    string rna;
+    rna.reserve(strand.length());
+    for (int i = 0; i < (int)strand.length(); i++) {
+        char c = strand[i];
+        if (c == 'T' || c == 't') rna.push_back('U');
+        else rna.push_back((char)toupper(c));
+    }
+    return rna;
+}
 
-void handleGreenTile(Player &player, Board &board, int playerIndex) {
+void handleGreenTile(Player player, Board board, int playerIndex, RandomEvent events[100], int eventCount) {
     if (rand() % 100 < 50) {
         cout << "\n*** Random Event Triggered! ***\n";
         
@@ -359,7 +364,7 @@ void handleGreenTile(Player &player, Board &board, int playerIndex) {
     }
 }
 
-void handleBlueTile(Player &player) {
+void handleBlueTile(Player player) {
     cout << "\n*** Blue Tile: DNA Similarity Test (Equal Length) ***\n";
     string randomDNA = generateRandomDNAStrand(8);
     cout << "Random DNA strand: " << randomDNA << endl;
@@ -383,7 +388,7 @@ void handleBlueTile(Player &player) {
     }
 }
 
-void handlePinkTile(Player &player) {
+void handlePinkTile(Player player) {
     cout << "\n*** Pink Tile: DNA Similarity Test (Unequal Length) ***\n";
 
     const int longLen = 12;
@@ -426,7 +431,7 @@ void handlePinkTile(Player &player) {
     }
 }
 
-void handleRedTile(Player &player) {
+void handleRedTile(Player player) {
     cout << "\n*** Red Tile: Mutation Identification ***\n";
     string randomDNA = generateRandomDNAStrand(6);
     cout << "Random DNA strand: " << randomDNA << endl;
@@ -441,7 +446,7 @@ void handleRedTile(Player &player) {
     player.changeStats(0, 0, 100);
 }
 
-void handleBrownTile(Player &player) {
+void handleBrownTile(Player player) {
     cout << "\n*** Brown Tile: DNA to RNA Transcription ***\n";
     string randomDNA = generateRandomDNAStrand(6);
     cout << "Random DNA strand: " << randomDNA << endl;
@@ -450,11 +455,7 @@ void handleBrownTile(Player &player) {
     cin >> userRNA;
 
     for (int i = 0; i < (int)userRNA.length(); ++i) userRNA[i] = (char)toupper(userRNA[i]);
-    string correctRNA = randomDNA;
-    for (int i = 0; i < (int)correctRNA.length(); ++i) {
-        if (correctRNA[i] == 'T' || correctRNA[i] == 't') correctRNA[i] = 'U';
-        else correctRNA[i] = (char)toupper(correctRNA[i]);
-    }
+    string correctRNA = transcribeDNAtoRNA(randomDNA);
 
     if (userRNA == correctRNA) {
         cout << "Correct! +200 Discovery Points, +50 Accuracy\n";
@@ -467,7 +468,7 @@ void handleBrownTile(Player &player) {
     }
 }
 
-void handlePurpleTile(Player &player) {
+void handlePurpleTile(Player player, Riddle riddles[25], int riddleCount) {
     cout << "\n*** Purple Tile: Riddle Time! ***\n";
     
     int riddleIndex = rand() % riddleCount;
@@ -497,7 +498,7 @@ void handlePurpleTile(Player &player) {
     }
 }
 
-void displayMainMenu(Player &player, Board &board, int playerIndex) {
+void displayMainMenu(Player player, Board board, int playerIndex) {
     bool turnComplete = false;
     
     while (!turnComplete) {
@@ -587,14 +588,18 @@ int main() {
     cout << "  JOURNEY THROUGH THE GENOME\n";
     cout << "========================================\n\n";
     
-    loadCharacters();
-    loadRandomEvents();
-    loadRiddles();
+    Character characters[5];
+    RandomEvent events[100];
+    Riddle riddles[25];
+    
+    loadCharacters(characters);
+    int eventCount = loadRandomEvents(events);
+    int riddleCount = loadRiddles(riddles);
     
     bool availableCharacters[5] = {true, true, true, true, true};
     
-    Player player1 = setupPlayer(1, availableCharacters);
-    Player player2 = setupPlayer(2, availableCharacters);
+    Player player1 = setupPlayer(1, characters, availableCharacters);
+    Player player2 = setupPlayer(2, characters, availableCharacters);
     
     Board gameBoard;
     gameBoard.initializeBoard();
@@ -606,13 +611,13 @@ int main() {
     bool gameOver = false;
     
     while (!gameOver) {
-        Player* activePlayer = (currentPlayer == 0) ? &player1 : &player2;
+        Player activePlayer = (currentPlayer == 0) ? player1 : player2;
         
         cout << "\n\n========================================\n";
-        cout << activePlayer->getPlayerName() << "'s Turn (" << activePlayer->getCharacterName() << ")\n";
+        cout << activePlayer.getPlayerName() << "'s Turn (" << activePlayer.getCharacterName() << ")\n";
         cout << "========================================\n";
         
-        displayMainMenu(*activePlayer, gameBoard, currentPlayer);
+        displayMainMenu(activePlayer, gameBoard, currentPlayer);
         
         int pos = gameBoard.getPlayerPosition(currentPlayer);
         if (pos > 0 && pos < 51) {
@@ -630,30 +635,30 @@ int main() {
             
             switch(tileColor) {
                 case 'G':
-                    handleGreenTile(*activePlayer, gameBoard, currentPlayer);
+                    handleGreenTile(activePlayer, gameBoard, currentPlayer, events, eventCount);
                     break;
                 case 'B':
-                    handleBlueTile(*activePlayer);
+                    handleBlueTile(activePlayer);
                     break;
                 case 'P':
-                    handlePinkTile(*activePlayer);
+                    handlePinkTile(activePlayer);
                     break;
                 case 'R':
-                    handleRedTile(*activePlayer);
+                    handleRedTile(activePlayer);
                     break;
                 case 'T':
-                    handleBrownTile(*activePlayer);
+                    handleBrownTile(activePlayer);
                     break;
                 case 'U':
-                    handlePurpleTile(*activePlayer);
+                    handlePurpleTile(activePlayer, riddles, riddleCount);
                     break;
             }
             
             cout << "\nCurrent Stats:\n";
-            cout << "Discovery Points: " << activePlayer->getDiscoveryPoints() << "\n";
-            cout << "Accuracy: " << activePlayer->getAccuracy() << "\n";
-            cout << "Efficiency: " << activePlayer->getEfficiency() << "\n";
-            cout << "Insight: " << activePlayer->getInsight() << "\n";
+            cout << "Discovery Points: " << activePlayer.getDiscoveryPoints() << "\n";
+            cout << "Accuracy: " << activePlayer.getAccuracy() << "\n";
+            cout << "Efficiency: " << activePlayer.getEfficiency() << "\n";
+            cout << "Insight: " << activePlayer.getInsight() << "\n";
         }
         
         if (gameBoard.getPlayerPosition(0) >= 51 && gameBoard.getPlayerPosition(1) >= 51) {
