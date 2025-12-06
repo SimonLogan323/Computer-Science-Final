@@ -30,7 +30,6 @@ struct Riddle {
     string answer;
 };
 
-
 struct LeaderboardEntry {
     string playerName;
     string characterName;
@@ -253,7 +252,6 @@ Player setupPlayer(int playerNum, Character characters[5], bool available[5]) {
     return player;
 }
 
-
 void sortLeaderboard(LeaderboardEntry entries[], int count) {
     for (int i = 0; i < count - 1; i++) {
         for (int j = 0; j < count - i - 1; j++) {
@@ -330,7 +328,6 @@ void displayLeaderboard() {
     
     cout << "========================================\n";
 }
-
 
 string generateRandomDNAStrand(int length) {
     string bases = "ATGC";
@@ -415,13 +412,16 @@ string transcribeDNAtoRNA(string strand) {
     rna.reserve(strand.length());
     for (int i = 0; i < (int)strand.length(); i++) {
         char c = strand[i];
-        if (c == 'T' || c == 't') rna.push_back('U');
-        else rna.push_back((char)toupper(c));
+        if (c == 'T' || c == 't') {
+            rna.push_back('U');
+        } else {
+            rna.push_back((char)toupper(c));
+        }
     }
     return rna;
 }
 
-void handleGreenTile(Player player, Board board, int playerIndex, RandomEvent events[100], int eventCount) {
+Player handleGreenTile(Player player, RandomEvent events[100], int eventCount) {
     if (rand() % 100 < 50) {
         cout << "\n*** Random Event Triggered! ***\n";
         
@@ -448,100 +448,173 @@ void handleGreenTile(Player player, Board board, int playerIndex, RandomEvent ev
     } else {
         cout << "\nNothing happens on this tile.\n";
     }
+    return player;
 }
 
-void handleBlueTile(Player player) {
+Player handleBlueTile(Player player) {
     cout << "\n*** Blue Tile: DNA Similarity Test (Equal Length) ***\n";
-    string randomDNA = generateRandomDNAStrand(8);
-    cout << "Random DNA strand: " << randomDNA << endl;
-    cout << "Enter second DNA strand: ";
-    string strand2;
-    cin >> strand2;
     
-    double similarity = strandSimilarity(randomDNA, strand2);
-    cout << "Similarity score: " << similarity << "\n";
+    int length = 8;
+    string strand1 = generateRandomDNAStrand(length);
+    string strand2 = generateRandomDNAStrand(length);
     
-    if (similarity > 0.7) {
-        cout << "Excellent work! +300 Discovery Points, +50 Accuracy\n";
-        player.addDiscoveryPoints(300);
-        player.changeStats(50, 0, 0);
-    } else if (similarity > 0.4) {
-        cout << "Good effort! +100 Discovery Points\n";
-        player.addDiscoveryPoints(100);
-    } else {
-        cout << "Poor match. -100 Discovery Points\n";
-        player.addDiscoveryPoints(-100);
-    }
-}
-
-void handlePinkTile(Player player) {
-    cout << "\n*** Pink Tile: DNA Similarity Test (Unequal Length) ***\n";
-
-    const int longLen = 12;
-    const int targetLen = 6;
-    string longStr = generateRandomDNAStrand(longLen);
-    string target = generateRandomDNAStrand(targetLen);
-
-    cout << "Long DNA strand:   " << longStr << endl;
-    cout << "Target DNA strand: " << target << "\n";
-    cout << "Enter the starting position where the target best aligns in the long strand (First Letter = Position 1): ";
-
-    int userPos1;
-    if (!(cin >> userPos1)) {
+    cout << "Strand 1: " << strand1 << endl;
+    cout << "Strand 2: " << strand2 << endl;
+    cout << "Guess the similarity score (0.00 to 1.00): ";
+    
+    double userGuess;
+    if (!(cin >> userGuess)) {
         cin.clear();
         string discard;
         getline(cin, discard);
-        cout << "Invalid input. No match. -50 Discovery Points\n";
+        cout << "Invalid input. -100 Discovery Points\n";
+        player.addDiscoveryPoints(-100);
+        return player;
+    }
+    
+    double actualSimilarity = strandSimilarity(strand1, strand2);
+    cout << "Actual similarity: " << actualSimilarity << "\n";
+    
+    double difference = actualSimilarity - userGuess;
+    if (difference < 0) {
+        difference = -difference;
+    }
+    
+    if (difference <= 0.1) {
+        cout << "Excellent guess! +300 Discovery Points, +50 Accuracy\n";
+        player.addDiscoveryPoints(300);
+        player.changeStats(50, 0, 0);
+    } else if (difference <= 0.25) {
+        cout << "Good estimate! +150 Discovery Points\n";
+        player.addDiscoveryPoints(150);
+    } else if (difference <= 0.4) {
+        cout << "Not bad! +50 Discovery Points\n";
+        player.addDiscoveryPoints(50);
+    } else {
+        cout << "Way off. -100 Discovery Points\n";
+        player.addDiscoveryPoints(-100);
+    }
+    
+    return player;
+}
+
+Player handlePinkTile(Player player) {
+    cout << "\n*** Pink Tile: DNA Similarity Test (Unequal Length) ***\n";
+
+    int longLen = 15;
+    int shortLen = 6;
+    string longStrand = generateRandomDNAStrand(longLen);
+    string shortStrand = generateRandomDNAStrand(shortLen);
+
+    cout << "Long strand:  " << longStrand << endl;
+    cout << "Short strand: " << shortStrand << "\n";
+    cout << "The short strand can slide along the long strand to find the best match.\n";
+    cout << "Guess the similarity score at the BEST alignment position (0.00 to 1.00): ";
+
+    double userGuess;
+    if (!(cin >> userGuess)) {
+        cin.clear();
+        string discard;
+        getline(cin, discard);
+        cout << "Invalid input. -50 Discovery Points\n";
         player.addDiscoveryPoints(-50);
-        return;
+        return player;
     }
 
-    int userPos = userPos1 - 1;
-
-    int bestMatch = bestStrandMatch(longStr, target);
-    if (bestMatch < 0) {
-        cout << "No alignment found between the strands. -50 Discovery Points\n";
+    int bestIndex = bestStrandMatch(longStrand, shortStrand);
+    if (bestIndex < 0) {
+        cout << "No alignment found. -50 Discovery Points\n";
         player.addDiscoveryPoints(-50);
-        return;
+        return player;
     }
 
-    cout << "Best alignment starts at position: " << (bestMatch + 1) << " (1-based)\n";
+    int matches = 0;
+    for (int i = 0; i < shortLen; i++) {
+        if (longStrand[bestIndex + i] == shortStrand[i]) {
+            matches++;
+        }
+    }
+    double actualSimilarity = (double)matches / shortLen;
+    
+    cout << "Best alignment at position " << (bestIndex + 1) << "\n";
+    cout << "Actual similarity at best position: " << actualSimilarity << "\n";
 
-    if (userPos == bestMatch) {
-        cout << "Correct! +250 Discovery Points, +50 Efficiency\n";
+    double difference = actualSimilarity - userGuess;
+    if (difference < 0) {
+        difference = -difference;
+    }
+
+    if (difference <= 0.15) {
+        cout << "Excellent! +250 Discovery Points, +50 Efficiency\n";
         player.addDiscoveryPoints(250);
         player.changeStats(0, 50, 0);
+    } else if (difference <= 0.3) {
+        cout << "Good estimate! +100 Discovery Points\n";
+        player.addDiscoveryPoints(100);
     } else {
-        cout << "Incorrect. The correct starting position was " << (bestMatch + 1) << ". -50 Discovery Points\n";
+        cout << "Not quite. -50 Discovery Points\n";
         player.addDiscoveryPoints(-50);
     }
+    
+    return player;
 }
 
-void handleRedTile(Player player) {
+Player handleRedTile(Player player) {
     cout << "\n*** Red Tile: Mutation Identification ***\n";
-    string randomDNA = generateRandomDNAStrand(6);
-    cout << "Random DNA strand: " << randomDNA << endl;
-    cout << "Enter target DNA strand: ";
-    string target;
-    cin >> target;
     
-    identifyMutations(randomDNA, target);
+    int length = 8;
+    string originalStrand = generateRandomDNAStrand(length);
     
-    cout << "\nMutation analysis complete! +400 Discovery Points, +100 Insight\n";
-    player.addDiscoveryPoints(400);
-    player.changeStats(0, 0, 100);
+    cout << "Original DNA strand: " << originalStrand << endl;
+    cout << "Enter a mutated version of this strand: ";
+    string mutatedStrand;
+    cin >> mutatedStrand;
+    
+    identifyMutations(originalStrand, mutatedStrand);
+    
+    cout << "\nHow many substitution mutations did you introduce? ";
+    int userSubstitutions;
+    if (!(cin >> userSubstitutions)) {
+        cin.clear();
+        string discard;
+        getline(cin, discard);
+        cout << "Invalid input. -100 Discovery Points\n";
+        player.addDiscoveryPoints(-100);
+        return player;
+    }
+    
+    int actualSubstitutions = 0;
+    int minLen = (originalStrand.length() < mutatedStrand.length()) ? originalStrand.length() : mutatedStrand.length();
+    for (int i = 0; i < minLen; i++) {
+        if (originalStrand[i] != mutatedStrand[i]) {
+            actualSubstitutions++;
+        }
+    }
+    
+    if (userSubstitutions == actualSubstitutions) {
+        cout << "Correct! +400 Discovery Points, +100 Insight\n";
+        player.addDiscoveryPoints(400);
+        player.changeStats(0, 0, 100);
+    } else {
+        cout << "Incorrect. There were " << actualSubstitutions << " substitutions. +100 Discovery Points for trying\n";
+        player.addDiscoveryPoints(100);
+    }
+    
+    return player;
 }
 
-void handleBrownTile(Player player) {
+Player handleBrownTile(Player player) {
     cout << "\n*** Brown Tile: DNA to RNA Transcription ***\n";
-    string randomDNA = generateRandomDNAStrand(6);
-    cout << "Random DNA strand: " << randomDNA << endl;
-    cout << "Enter the RNA transcription: ";
+    string dnaStrand = generateRandomDNAStrand(8);
+    cout << "DNA strand: " << dnaStrand << endl;
+    cout << "Enter the RNA transcription (replace all T with U): ";
     string userRNA;
     cin >> userRNA;
 
-    for (int i = 0; i < (int)userRNA.length(); ++i) userRNA[i] = (char)toupper(userRNA[i]);
-    string correctRNA = transcribeDNAtoRNA(randomDNA);
+    for (int i = 0; i < (int)userRNA.length(); i++) {
+        userRNA[i] = (char)toupper(userRNA[i]);
+    }
+    string correctRNA = transcribeDNAtoRNA(dnaStrand);
 
     if (userRNA == correctRNA) {
         cout << "Correct! +200 Discovery Points, +50 Accuracy\n";
@@ -552,9 +625,11 @@ void handleBrownTile(Player player) {
         cout << "-100 Discovery Points\n";
         player.addDiscoveryPoints(-100);
     }
+    
+    return player;
 }
 
-void handlePurpleTile(Player player, Riddle riddles[25], int riddleCount) {
+Player handlePurpleTile(Player player, Riddle riddles[25], int riddleCount) {
     cout << "\n*** Purple Tile: Riddle Time! ***\n";
     
     int riddleIndex = rand() % riddleCount;
@@ -582,9 +657,11 @@ void handlePurpleTile(Player player, Riddle riddles[25], int riddleCount) {
         cout << "-200 Discovery Points\n";
         player.addDiscoveryPoints(-200);
     }
+
+    return player;
 }
 
-void displayMainMenu(Player player, Board board, int playerIndex) {
+Player displayMainMenu(Player player, Board &board, int playerIndex) {
     bool turnComplete = false;
     
     while (!turnComplete) {
@@ -665,6 +742,8 @@ void displayMainMenu(Player player, Board board, int playerIndex) {
             }
         }
     }
+
+    return player;
 }
 
 int main() {
@@ -697,20 +776,20 @@ int main() {
     char viewLeaderboard;
     cin >> viewLeaderboard;
     if (viewLeaderboard == 'y' || viewLeaderboard == 'Y') {
-    displayLeaderboard();
+        displayLeaderboard();
     }
     
     int currentPlayer = 0;
     bool gameOver = false;
     
     while (!gameOver) {
-        Player activePlayer = (currentPlayer == 0) ? player1 : player2;
+        Player* activePlayer = (currentPlayer == 0) ? &player1 : &player2;
         
         cout << "\n\n========================================\n";
-        cout << activePlayer.getPlayerName() << "'s Turn (" << activePlayer.getCharacterName() << ")\n";
+        cout << activePlayer->getPlayerName() << "'s Turn (" << activePlayer->getCharacterName() << ")\n";
         cout << "========================================\n";
         
-        displayMainMenu(activePlayer, gameBoard, currentPlayer);
+        *activePlayer = displayMainMenu(*activePlayer, gameBoard, currentPlayer);
         
         int pos = gameBoard.getPlayerPosition(currentPlayer);
         if (pos > 0 && pos < 51) {
@@ -728,30 +807,30 @@ int main() {
             
             switch(tileColor) {
                 case 'G':
-                    handleGreenTile(activePlayer, gameBoard, currentPlayer, events, eventCount);
+                    *activePlayer = handleGreenTile(*activePlayer, events, eventCount);
                     break;
                 case 'B':
-                    handleBlueTile(activePlayer);
+                    *activePlayer = handleBlueTile(*activePlayer);
                     break;
                 case 'P':
-                    handlePinkTile(activePlayer);
+                    *activePlayer = handlePinkTile(*activePlayer);
                     break;
                 case 'R':
-                    handleRedTile(activePlayer);
+                    *activePlayer = handleRedTile(*activePlayer);
                     break;
                 case 'T':
-                    handleBrownTile(activePlayer);
+                    *activePlayer = handleBrownTile(*activePlayer);
                     break;
                 case 'U':
-                    handlePurpleTile(activePlayer, riddles, riddleCount);
+                    *activePlayer = handlePurpleTile(*activePlayer, riddles, riddleCount);
                     break;
             }
             
             cout << "\nCurrent Stats:\n";
-            cout << "Discovery Points: " << activePlayer.getDiscoveryPoints() << "\n";
-            cout << "Accuracy: " << activePlayer.getAccuracy() << "\n";
-            cout << "Efficiency: " << activePlayer.getEfficiency() << "\n";
-            cout << "Insight: " << activePlayer.getInsight() << "\n";
+            cout << "Discovery Points: " << activePlayer->getDiscoveryPoints() << "\n";
+            cout << "Accuracy: " << activePlayer->getAccuracy() << "\n";
+            cout << "Efficiency: " << activePlayer->getEfficiency() << "\n";
+            cout << "Insight: " << activePlayer->getInsight() << "\n";
         }
         
         if (gameBoard.getPlayerPosition(0) >= 51 && gameBoard.getPlayerPosition(1) >= 51) {
@@ -786,21 +865,13 @@ int main() {
     cout << "  Final Discovery Points: " << finalDP2 << "\n\n";
     
     if (finalDP1 > finalDP2) {
-        cout << "🏆 " << player1.getPlayerName() << " is the new Lead Genomicist! 🏆\n";
+    cout << "🏆 " << player1.getPlayerName() << " is the new Lead Genomicist! 🏆\n";
     } else if (finalDP2 > finalDP1) {
-        cout << "🏆 " << player2.getPlayerName() << " is the new Lead Genomicist! 🏆\n";
+    cout << "🏆 " << player2.getPlayerName() << " is the new Lead Genomicist! 🏆\n";
     } else {
-        cout << "🏆 It's a tie! Both scientists share the Lead Genomicist position! 🏆\n";
+    cout << "🏆 It's a tie! Both scientists share the Lead Genomicist position! 🏆\n";
     }
-    
-    ofstream outFile("game_results.txt");
-    if (outFile.is_open()) {
-        outFile << "Journey Through the Genome - Final Results\n\n";
-        outFile << player1.getPlayerName() << " (" << player1.getCharacterName() << "): " << finalDP1 << " DP\n";
-        outFile << player2.getPlayerName() << " (" << player2.getCharacterName() << "): " << finalDP2 << " DP\n";
-        outFile.close();
-        cout << "\nResults saved to game_results.txt\n";
-    }
-    
+
     return 0;
+
 }
