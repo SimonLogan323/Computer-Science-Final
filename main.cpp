@@ -30,6 +30,13 @@ struct Riddle {
     string answer;
 };
 
+
+struct LeaderboardEntry {
+    string playerName;
+    string characterName;
+    int finalScore;
+};
+
 void loadCharacters(Character characters[5]) {
     ifstream file("characters.txt");
     if (!file.is_open()) {
@@ -245,6 +252,85 @@ Player setupPlayer(int playerNum, Character characters[5], bool available[5]) {
     
     return player;
 }
+
+
+void sortLeaderboard(LeaderboardEntry entries[], int count) {
+    for (int i = 0; i < count - 1; i++) {
+        for (int j = 0; j < count - i - 1; j++) {
+            if (entries[j].finalScore < entries[j + 1].finalScore) {
+                LeaderboardEntry temp = entries[j];
+                entries[j] = entries[j + 1];
+                entries[j + 1] = temp;
+            }
+        }
+    }
+}
+
+void saveToLeaderboard(string playerName, string characterName, int finalScore) {
+    ofstream outFile("leaderboard.txt", ios::app);
+    if (outFile.is_open()) {
+        outFile << playerName << "|" << characterName << "|" << finalScore << "\n";
+        outFile.close();
+    }
+}
+
+void displayLeaderboard() {
+    ifstream inFile("leaderboard.txt");
+    if (!inFile.is_open()) {
+        cout << "\nNo leaderboard history found yet.\n";
+        return;
+    }
+    
+    LeaderboardEntry entries[100];
+    int count = 0;
+    
+    string line;
+    while (getline(inFile, line) && count < 100) {
+        int firstPipe = -1;
+        int secondPipe = -1;
+        
+        for (int i = 0; i < line.length(); i++) {
+            if (line[i] == '|') {
+                if (firstPipe == -1) {
+                    firstPipe = i;
+                } else {
+                    secondPipe = i;
+                    break;
+                }
+            }
+        }
+        
+        if (firstPipe != -1 && secondPipe != -1) {
+            entries[count].playerName = line.substr(0, firstPipe);
+            entries[count].characterName = line.substr(firstPipe + 1, secondPipe - firstPipe - 1);
+            entries[count].finalScore = stoi(line.substr(secondPipe + 1));
+            count++;
+        }
+    }
+    
+    inFile.close();
+    
+    if (count == 0) {
+        cout << "\nNo leaderboard entries found.\n";
+        return;
+    }
+    
+    sortLeaderboard(entries, count);
+    
+    cout << "\n========================================\n";
+    cout << "       ALL-TIME LEADERBOARD\n";
+    cout << "========================================\n";
+    
+    int displayCount = (count < 10) ? count : 10;
+    for (int i = 0; i < displayCount; i++) {
+        cout << (i + 1) << ". " << entries[i].playerName 
+             << " (" << entries[i].characterName << ") - " 
+             << entries[i].finalScore << " DP\n";
+    }
+    
+    cout << "========================================\n";
+}
+
 
 string generateRandomDNAStrand(int length) {
     string bases = "ATGC";
@@ -606,6 +692,13 @@ int main() {
     
     cout << "\n\nGame Starting!\n";
     gameBoard.displayBoard();
+
+    cout << "\nWould you like to view the all-time leaderboard? (y/n): ";
+    char viewLeaderboard;
+    cin >> viewLeaderboard;
+    if (viewLeaderboard == 'y' || viewLeaderboard == 'Y') {
+    displayLeaderboard();
+    }
     
     int currentPlayer = 0;
     bool gameOver = false;
@@ -683,6 +776,9 @@ int main() {
     finalDP2 += (player2.getEfficiency() / 100) * 1000;
     finalDP2 += (player2.getInsight() / 100) * 1000;
     
+    saveToLeaderboard(player1.getPlayerName(), player1.getCharacterName(), finalDP1);
+    saveToLeaderboard(player2.getPlayerName(), player2.getCharacterName(), finalDP2);
+
     cout << player1.getPlayerName() << " (" << player1.getCharacterName() << ")\n";
     cout << "  Final Discovery Points: " << finalDP1 << "\n\n";
     
