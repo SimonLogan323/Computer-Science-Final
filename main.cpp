@@ -781,15 +781,16 @@ int main() {
     
     int currentPlayer = 0;
     bool gameOver = false;
-    
     while (!gameOver) {
-        Player* activePlayer = (currentPlayer == 0) ? &player1 : &player2;
+        // work with a local copy (no references or pointers)
+        Player activePlayer = (currentPlayer == 0) ? player1 : player2;
         
         cout << "\n\n========================================\n";
-        cout << activePlayer->getPlayerName() << "'s Turn (" << activePlayer->getCharacterName() << ")\n";
+        cout << activePlayer.getPlayerName() << "'s Turn (" << activePlayer.getCharacterName() << ")\n";
         cout << "========================================\n";
         
-        *activePlayer = displayMainMenu(*activePlayer, gameBoard, currentPlayer);
+        // display menu and get possibly-updated player back (pass-by-value)
+        activePlayer = displayMainMenu(activePlayer, gameBoard, currentPlayer);
         
         int pos = gameBoard.getPlayerPosition(currentPlayer);
         if (pos > 0 && pos < 51) {
@@ -803,34 +804,44 @@ int main() {
                 case 'R': cout << "RED tile!\n"; break;
                 case 'T': cout << "BROWN tile!\n"; break;
                 case 'U': cout << "PURPLE tile!\n"; break;
+                default:  cout << "UNKNOWN tile!\n"; break;
             }
             
             switch(tileColor) {
                 case 'G':
-                    *activePlayer = handleGreenTile(*activePlayer, events, eventCount);
+                    activePlayer = handleGreenTile(activePlayer, events, eventCount);
                     break;
                 case 'B':
-                    *activePlayer = handleBlueTile(*activePlayer);
+                    activePlayer = handleBlueTile(activePlayer);
                     break;
                 case 'P':
-                    *activePlayer = handlePinkTile(*activePlayer);
+                    activePlayer = handlePinkTile(activePlayer);
                     break;
                 case 'R':
-                    *activePlayer = handleRedTile(*activePlayer);
+                    activePlayer = handleRedTile(activePlayer);
                     break;
                 case 'T':
-                    *activePlayer = handleBrownTile(*activePlayer);
+                    activePlayer = handleBrownTile(activePlayer);
                     break;
                 case 'U':
-                    *activePlayer = handlePurpleTile(*activePlayer, riddles, riddleCount);
+                    activePlayer = handlePurpleTile(activePlayer, riddles, riddleCount);
+                    break;
+                default:
                     break;
             }
             
             cout << "\nCurrent Stats:\n";
-            cout << "Discovery Points: " << activePlayer->getDiscoveryPoints() << "\n";
-            cout << "Accuracy: " << activePlayer->getAccuracy() << "\n";
-            cout << "Efficiency: " << activePlayer->getEfficiency() << "\n";
-            cout << "Insight: " << activePlayer->getInsight() << "\n";
+            cout << "Discovery Points: " << activePlayer.getDiscoveryPoints() << "\n";
+            cout << "Accuracy: " << activePlayer.getAccuracy() << "\n";
+            cout << "Efficiency: " << activePlayer.getEfficiency() << "\n";
+            cout << "Insight: " << activePlayer.getInsight() << "\n";
+        }
+        
+        // write the updated local player back (no pass-by-reference)
+        if (currentPlayer == 0) {
+            player1 = activePlayer;
+        } else {
+            player2 = activePlayer;
         }
         
         if (gameBoard.getPlayerPosition(0) >= 51 && gameBoard.getPlayerPosition(1) >= 51) {
