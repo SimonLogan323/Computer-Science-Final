@@ -872,6 +872,17 @@ int main() {
     cout << "🏆 It's a tie! Both scientists share the Lead Genomicist position! 🏆\n";
     }
 
+    ofstream outFile("game_results.txt");
+    if (outFile.is_open()) {
+        outFile << "Journey Through the Genome - Final Results\n\n";
+        outFile << player1.getPlayerName() << " (" << player1.getCharacterName() << "): " << finalDP1 << " DP\n";
+        outFile << player2.getPlayerName() << " (" << player2.getCharacterName() << "): " << finalDP2 << " DP\n";
+        outFile.close();
+        cout << "\nResults saved to game_results.txt\n";
+    }
+
+
+
     return 0;
 
 }

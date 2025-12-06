@@ -55,7 +55,7 @@ void Board::initializeTiles(int player_index) {
         } 
         // Hard-coded target of 30 green tiles
         // Probablisitic method to spread out the green tiles randomly
-        else if (green_count < 30 && (rand() % (total_tiles - i) < 30 - green_count)) {
+        else if (green_count < 20 && (rand() % (total_tiles - i) < 20 - green_count)) {
             tile.color = 'G';
             green_count++;
         }
