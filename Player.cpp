@@ -2,6 +2,13 @@
 #include <string>
 using std::string;
 
+/*
+Jack Rosenberg
+Simon Logan
+Computer Science Final Project, CSCI 1300
+
+*/
+
 Player::Player(string name, string character) {
     playerName = name;
     characterName = character;

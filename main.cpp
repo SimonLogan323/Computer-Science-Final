@@ -9,6 +9,14 @@
 
 using namespace std;
 
+/*
+Jack Rosenberg
+Simon Logan
+Computer Science Final Project, CSCI 1300
+
+*/
+
+
 struct Character {
     string name;
     int experience;
@@ -782,14 +790,13 @@ int main() {
     int currentPlayer = 0;
     bool gameOver = false;
     while (!gameOver) {
-        // work with a local copy (no references or pointers)
+        
         Player activePlayer = (currentPlayer == 0) ? player1 : player2;
         
         cout << "\n\n========================================\n";
         cout << activePlayer.getPlayerName() << "'s Turn (" << activePlayer.getCharacterName() << ")\n";
         cout << "========================================\n";
-        
-        // display menu and get possibly-updated player back (pass-by-value)
+       
         activePlayer = displayMainMenu(activePlayer, gameBoard, currentPlayer);
         
         int pos = gameBoard.getPlayerPosition(currentPlayer);
@@ -837,7 +844,6 @@ int main() {
             cout << "Insight: " << activePlayer.getInsight() << "\n";
         }
         
-        // write the updated local player back (no pass-by-reference)
         if (currentPlayer == 0) {
             player1 = activePlayer;
         } else {
